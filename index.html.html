@@ -1,0 +1,746 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>EarnPro - User App</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+    <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.6.0/dist/confetti.browser.min.js"></script>
+    
+    <style>
+        :root {
+            --bg: #121212; --surface: #1e1e1e; --surface-light: #2d2d2d;
+            --primary: #bb86fc; --secondary: #03dac6; --error: #cf6679;
+            --warning: #ffb74d; --success: #81c784; --text: #e0e0e0; --text-sec: #a0a0a0;
+        }
+        * { box-sizing: border-box; margin: 0; padding: 0; font-family: 'Segoe UI', sans-serif; -webkit-tap-highlight-color: transparent; }
+        body { background-color: var(--bg); color: var(--text); padding-bottom: 70px; }
+        .container { max-width: 480px; margin: 0 auto; padding: 15px; }
+        .hidden { display: none !important; }
+        
+        /* Auth Screen */
+        #auth-screen { min-height: 100vh; display: flex; flex-direction: column; justify-content: center; align-items: center; text-align: center; padding: 20px; }
+        .auth-card { background: var(--surface); padding: 30px; border-radius: 20px; width: 100%; max-width: 350px; box-shadow: 0 4px 15px rgba(0,0,0,0.5); }
+        .auth-input { width: 100%; padding: 12px; margin-bottom: 15px; background: #333; border: 1px solid #444; color: #fff; border-radius: 8px; outline: none; }
+        .auth-btn { background: var(--primary); color: #000; padding: 12px; width: 100%; border-radius: 25px; border: none; font-weight: bold; cursor: pointer; }
+        .toggle-link { color: var(--secondary); cursor: pointer; font-size: 14px; margin-top: 15px; }
+        
+        /* Full Screen Message (Maintenance & Ban) */
+        .fs-message { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: var(--bg); z-index: 10000; display: flex; flex-direction: column; justify-content: center; align-items: center; text-align: center; padding: 30px; }
+        .fs-icon { font-size: 60px; margin-bottom: 20px; }
+        .fs-title { color: var(--text); margin-bottom: 10px; font-size: 24px; }
+        .fs-desc { color: var(--text-sec); max-width: 300px; line-height: 1.5; }
+        
+        .maint-icon { color: var(--warning); animation: wrench 2s infinite ease-in-out; }
+        @keyframes wrench { 0%{transform: rotate(0deg);} 50%{transform: rotate(20deg);} 100%{transform: rotate(0deg);} }
+
+        .ban-icon { color: var(--error); }
+        .contact-btn { background: #333; color: #fff; padding: 10px 20px; border-radius: 8px; margin-top: 20px; border: 1px solid #555; cursor: pointer; }
+
+        /* Dashboard & Components */
+        .header { display: flex; justify-content: space-between; align-items: center; background: var(--surface); padding: 10px 15px; border-radius: 15px; margin-bottom: 20px; box-shadow: 0 2px 10px rgba(0,0,0,0.3); }
+        .user-info-box { display:flex; align-items:center; gap:10px; }
+        .user-img { width: 45px; height: 45px; border-radius: 50%; border: 2px solid var(--secondary); object-fit: cover; background: #fff;}
+        .header-actions { display: flex; gap: 15px; align-items: center; }
+        .icon-btn { font-size: 20px; color: var(--text); cursor: pointer; position: relative; }
+        .coins-badge { background: #333; padding: 6px 14px; border-radius: 20px; color: var(--warning); font-weight: bold; display: flex; align-items: center; gap: 8px; border: 1px solid #444; }
+
+        .earn-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 15px; margin-bottom: 20px; }
+        .card { background: var(--surface); padding: 20px; border-radius: 15px; text-align: center; cursor: pointer; border: 1px solid #333; position: relative; transition: transform 0.2s; }
+        .card:active { transform: scale(0.98); }
+        .card i { font-size: 28px; margin-bottom: 10px; color: var(--primary); }
+        .limit-tag { font-size: 10px; color: var(--secondary); display: block; margin-top: 5px; }
+
+        .section-title { font-size: 18px; margin-bottom: 15px; border-left: 4px solid var(--secondary); padding-left: 10px; font-weight: bold; }
+        .list-item { background: var(--surface); padding: 15px; border-radius: 10px; display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px; border-bottom: 1px solid #333; }
+        
+        .task-card { background: var(--surface); padding: 15px; border-radius: 12px; display: flex; align-items: center; justify-content: space-between; margin-bottom: 10px; border: 1px solid #333; }
+        .task-left { display: flex; align-items: center; gap: 12px; }
+        .task-img { width: 40px; height: 40px; border-radius: 8px; object-fit: cover; }
+        .task-btn { background: var(--secondary); color: #000; border: none; padding: 8px 15px; border-radius: 20px; font-weight: bold; font-size: 12px; cursor: pointer; }
+        .task-btn.completed { background: #333; color: #888; cursor: default; }
+
+        .wallet-container { background: linear-gradient(135deg, #1e1e1e, #2d2d2d); padding: 20px; border-radius: 15px; text-align: center; margin-bottom: 20px; border: 1px solid #444; }
+        .wallet-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-top: 15px; }
+        .wallet-stat { background: rgba(0,0,0,0.3); padding: 10px; border-radius: 10px; }
+        .wallet-val { font-size: 20px; font-weight: bold; display: block; }
+        .wallet-label { font-size: 12px; color: var(--text-sec); }
+
+        /* REFER CARD */
+        .refer-card { background: linear-gradient(45deg, #330033, #1e1e1e); padding: 20px; border-radius: 15px; text-align: center; margin-bottom: 20px; border: 1px solid var(--primary); margin-top: 20px; }
+        .refer-code-box { background: rgba(255,255,255,0.1); padding: 10px; border-radius: 8px; border: 1px dashed var(--secondary); margin: 15px 0; font-size: 20px; font-weight: bold; letter-spacing: 2px; cursor: pointer; user-select: all; }
+        
+        .bottom-nav { position: fixed; bottom: 0; left: 0; width: 100%; background: var(--surface); display: flex; justify-content: space-around; padding: 12px 0; border-top: 1px solid #333; z-index: 100; }
+        .nav-item { display: flex; flex-direction: column; align-items: center; font-size: 10px; color: var(--text-sec); cursor: pointer; transition: 0.3s; }
+        .nav-item i { font-size: 18px; margin-bottom: 4px; }
+        .nav-item.active { color: var(--primary); }
+
+        #notif-modal { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.8); z-index: 2000; display: flex; align-items: center; justify-content: center; backdrop-filter: blur(5px); }
+        .notif-box { background: var(--surface); width: 90%; max-width: 400px; max-height: 70vh; border-radius: 15px; overflow: hidden; display: flex; flex-direction: column; }
+        .notif-header { padding: 15px; border-bottom: 1px solid #333; display: flex; justify-content: space-between; align-items: center; background: var(--surface-light); }
+        .notif-content { padding: 15px; overflow-y: auto; }
+        .notif-item { background: #252525; padding: 12px; border-radius: 8px; margin-bottom: 10px; border-left: 3px solid var(--primary); }
+        .notif-date { font-size: 10px; color: #888; display: block; margin-top: 5px; text-align: right; }
+
+        .wheel-container { position: relative; width: 280px; height: 280px; margin: 20px auto; }
+        .wheel { width: 100%; height: 100%; border-radius: 50%; border: 5px solid #fff; transition: transform 4s cubic-bezier(0.17, 0.67, 0.83, 0.67); 
+            background: conic-gradient(#f44336 0deg 60deg, #9c27b0 60deg 120deg, #3f51b5 120deg 180deg, #009688 180deg 240deg, #ffeb3b 240deg 300deg, #ff9800 300deg 360deg); 
+        }
+        .spin-btn { position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); width: 70px; height: 70px; background: #fff; border-radius: 50%; font-weight: bold; border: 4px solid var(--surface); cursor: pointer; z-index: 5; font-size: 16px; color: #000; box-shadow: 0 0 10px rgba(0,0,0,0.5);}
+        .spin-pointer { position: absolute; top: -15px; left: 50%; transform: translateX(-50%); width: 0; height: 0; border-left: 15px solid transparent; border-right: 15px solid transparent; border-top: 30px solid #fff; z-index: 10; filter: drop-shadow(0 2px 2px rgba(0,0,0,0.3));}
+
+        .scratch-container { position: relative; width: 300px; height: 150px; margin: 20px auto; background: #333; border-radius: 10px; overflow: hidden; display: flex; justify-content: center; align-items: center; }
+        .scratch-reward { font-size: 24px; font-weight: bold; color: var(--secondary); }
+        #scratch-canvas { position: absolute; top: 0; left: 0; width: 100%; height: 100%; cursor: crosshair; }
+        
+        .btn-block { width: 100%; padding: 12px; background: var(--secondary); color: #000; border: none; border-radius: 8px; font-weight: bold; cursor: pointer; margin-top: 10px; font-size: 14px;}
+        .withdraw-card { background: var(--surface-light); padding: 20px; border-radius: 15px; margin-bottom: 10px; text-align: center; border: 1px solid #444; }
+        .withdraw-info { display: flex; justify-content: space-around; margin: 15px 0; font-size: 13px; color: #aaa; background: rgba(0,0,0,0.2); padding: 10px; border-radius: 8px; }
+
+        #ad-overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: #000; z-index: 9999; display: flex; flex-direction: column; justify-content: center; align-items: center; }
+        .ad-timer { font-size: 40px; font-weight: bold; color: var(--secondary); }
+    </style>
+</head>
+<body>
+
+    <!-- MAINTENANCE SCREEN -->
+    <div id="maintenance-screen" class="fs-message hidden">
+        <i class="fas fa-tools fs-icon maint-icon"></i>
+        <h2 class="fs-title">Under Maintenance</h2>
+        <p class="fs-desc">Our servers are currently undergoing scheduled maintenance. Please check back later.</p>
+        <button class="btn-block" style="width:150px; background:#333; color:#fff; margin-top:20px;" onclick="location.reload()">Retry</button>
+    </div>
+
+    <!-- BAN SCREEN -->
+    <div id="ban-screen" class="fs-message hidden">
+        <i class="fas fa-ban fs-icon ban-icon"></i>
+        <h2 class="fs-title">Account Banned</h2>
+        <p class="fs-desc" style="color: var(--error);">Your account has been banned for suspicious activity.</p>
+        <button class="contact-btn" onclick="openSupportLink()">Contact Customer Care</button>
+        <button class="btn-block" style="width:150px; background:transparent; border:1px solid #444; color:#888; margin-top:20px;" onclick="logout()">Logout</button>
+    </div>
+
+    <!-- AUTH SCREEN -->
+    <div id="auth-screen">
+        <h1 style="margin-bottom: 20px; font-size: 32px;"><i class="fas fa-coins" style="color:var(--secondary)"></i> EarnPro</h1>
+        <div class="auth-card">
+            <h2 id="auth-title" style="margin-bottom: 20px;">Login</h2>
+            <input type="text" id="auth-name" class="auth-input hidden" placeholder="Full Name">
+            <input type="email" id="auth-email" class="auth-input" placeholder="Email">
+            <input type="password" id="auth-pass" class="auth-input" placeholder="Password">
+            <!-- New Referral Input -->
+            <input type="text" id="auth-referral" class="auth-input hidden" placeholder="Referral Code (Optional)">
+            
+            <button class="auth-btn" id="auth-submit-btn" onclick="submitAuth()">Login</button>
+            <div class="toggle-link" onclick="toggleAuthMode()" id="auth-toggle-text">Don't have an account? Sign Up</div>
+        </div>
+    </div>
+
+    <!-- MAIN APP -->
+    <div id="app-screen" class="hidden">
+        <div class="container">
+            <div class="header">
+                <div class="user-info-box">
+                    <img src="https://cdn-icons-png.flaticon.com/512/4140/4140048.png" id="nav-photo" class="user-img">
+                    <div style="line-height: 1.2;">
+                        <div style="font-size:12px; color:var(--text-sec)">Welcome,</div>
+                        <div id="nav-name" style="font-weight:bold; font-size:16px;">User</div>
+                    </div>
+                </div>
+                <div class="header-actions">
+                    <div class="icon-btn" onclick="openSupportLink()">
+                        <i class="fas fa-headset" style="color: var(--primary);"></i>
+                    </div>
+                    <div class="icon-btn" onclick="openNotifications()">
+                        <i class="fas fa-bell" style="color: var(--secondary);"></i>
+                    </div>
+                    <div class="coins-badge"><i class="fas fa-coins"></i> <span id="nav-coins">0</span></div>
+                </div>
+            </div>
+
+            <!-- HOME TAB -->
+            <div id="tab-home" class="tab-content">
+                <div class="earn-grid">
+                    <div class="card" onclick="startWatchVideo()">
+                        <i class="fas fa-play-circle"></i><h3>Watch</h3><span class="limit-tag" id="limit-video">Loading...</span>
+                    </div>
+                    <div class="card" onclick="showSpinSection()">
+                        <i class="fas fa-dharmachakra"></i><h3>Spin</h3><span class="limit-tag" id="limit-spin">Loading...</span>
+                    </div>
+                    <div class="card" onclick="showScratchSection()">
+                        <i class="fas fa-ticket-alt"></i><h3>Scratch</h3><span class="limit-tag" id="limit-scratch">Loading...</span>
+                    </div>
+                    <div class="card" onclick="switchTab('tasks')">
+                        <i class="fas fa-clipboard-list"></i><h3>Tasks</h3><span class="limit-tag">Earn More</span>
+                    </div>
+                </div>
+                <div class="section-title">Recent Activity</div>
+                <div id="dashboard-history"><div style="text-align:center; color:#666">Loading...</div></div>
+            </div>
+
+            <!-- SPIN TAB -->
+            <div id="tab-spin" class="tab-content hidden" style="text-align: center;">
+                <h2 style="margin-bottom:10px;">Spin & Win</h2>
+                <div class="wheel-container">
+                    <div class="spin-pointer"></div>
+                    <div class="wheel" id="wheel"></div>
+                    <button class="spin-btn" id="spin-main-btn" onclick="spinWheel()">SPIN</button>
+                </div>
+                <p id="spin-timer" style="color: var(--error); margin-top: 10px; font-weight: bold; min-height: 20px;"></p>
+                <button class="btn-block" onclick="switchTab('home')" style="background:#333; color:#fff">Back</button>
+            </div>
+
+            <!-- SCRATCH TAB -->
+            <div id="tab-scratch" class="tab-content hidden" style="text-align: center;">
+                <h2 style="margin-bottom:10px;">Scratch & Win</h2>
+                <div class="scratch-container">
+                    <div class="scratch-reward" id="scratch-val">?</div>
+                    <canvas id="scratch-canvas"></canvas>
+                </div>
+                <button class="btn-block" onclick="switchTab('home')" style="background:#333; color:#fff">Back</button>
+            </div>
+
+            <!-- TASKS TAB -->
+            <div id="tab-tasks" class="tab-content hidden">
+                <div class="section-title">App Tasks</div>
+                <div id="task-container" style="padding-bottom: 20px;"><div style="text-align:center; color:#666; padding: 20px;">Loading...</div></div>
+            </div>
+
+            <!-- HISTORY TAB -->
+            <div id="tab-history" class="tab-content hidden">
+                <div class="section-title">All Transactions</div>
+                <div id="full-history"><div style="text-align:center; color:#666">Loading...</div></div>
+            </div>
+
+            <!-- PROFILE TAB REARRANGED -->
+            <div id="tab-profile" class="tab-content hidden">
+                <div style="text-align:center; padding: 10px;">
+                    <img src="https://cdn-icons-png.flaticon.com/512/4140/4140048.png" id="profile-photo" class="user-img" style="width:80px; height:80px; margin-bottom:10px;">
+                    <h2 id="profile-name">Name</h2>
+                    <p id="profile-email" style="color:#888; font-size:12px;"></p>
+                </div>
+
+                <!-- 1. WALLET CONTAINER (Top) -->
+                <div class="wallet-container">
+                    <h3 style="color:var(--text);"><i class="fas fa-wallet" style="color:var(--secondary)"></i> Total Balance</h3>
+                    <div class="wallet-grid">
+                        <div class="wallet-stat"><span class="wallet-val" style="color:var(--warning)" id="profile-coins">0</span><span class="wallet-label">Coins</span></div>
+                        <div class="wallet-stat"><span class="wallet-val" style="color:var(--success)" id="profile-rupees">₹0.00</span><span class="wallet-label">Rupees</span></div>
+                    </div>
+                </div>
+
+                <!-- 2. WITHDRAW FUNDS (Directly Below Wallet) -->
+                <div class="withdraw-card">
+                    <h3 style="color:var(--primary)"><i class="fas fa-university"></i> Withdraw Funds</h3>
+                    <div class="withdraw-info"><span>100 Coins = ₹1</span><span>Min: 100 Coins</span></div>
+                    <button class="btn-block" onclick="openWithdrawModal()">Withdraw Now</button>
+                </div>
+
+                <div style="margin-top:15px; text-align:center;">
+                     <button class="contact-btn" style="width:100%; margin-top:0;" onclick="openSupportLink()"><i class="fas fa-headset"></i> Contact Support</button>
+                </div>
+
+                <!-- 3. REFER AND EARN (Moved to Bottom) -->
+                <div class="refer-card">
+                    <h3 style="color:var(--secondary)">REFER AND EARN</h3>
+                    <p style="font-size:12px; color:#ccc; margin-top:5px;">Refer a friend and earn 20 coins!</p>
+                    <p style="font-size:12px; color:#ccc;">Friend gets 10 coins bonus.</p>
+                    
+                    <div class="refer-code-box" id="my-refer-code" onclick="copyReferCode()">LOADING...</div>
+                    <button class="btn-block" style="background: var(--primary); color:#000;" onclick="shareApp()"><i class="fas fa-share-alt"></i> Share With Friends</button>
+                </div>
+
+                <button class="btn-block" onclick="logout()" style="background:transparent; border:1px solid var(--error); color:var(--error); margin-top:20px;">Logout</button>
+            </div>
+        </div>
+
+        <div class="bottom-nav">
+            <div class="nav-item active" onclick="switchTab('home')"><i class="fas fa-home"></i> Home</div>
+            <div class="nav-item" onclick="switchTab('tasks')"><i class="fas fa-tasks"></i> Tasks</div>
+            <div class="nav-item" onclick="switchTab('history')"><i class="fas fa-history"></i> History</div>
+            <div class="nav-item" onclick="switchTab('profile')"><i class="fas fa-user"></i> Profile</div>
+        </div>
+    </div>
+
+    <!-- NOTIFICATION MODAL -->
+    <div id="notif-modal" class="hidden">
+        <div class="notif-box">
+            <div class="notif-header"><h3>Notifications</h3><i class="fas fa-times" onclick="document.getElementById('notif-modal').classList.add('hidden')" style="cursor:pointer; font-size: 20px;"></i></div>
+            <div class="notif-content" id="notif-list"></div>
+        </div>
+    </div>
+
+    <!-- AD OVERLAY -->
+    <div id="ad-overlay" class="hidden">
+        <h3 id="ad-text-title">Advertisement</h3>
+        <div class="ad-timer" id="ad-countdown">5</div>
+        <p id="ad-text-desc">Wait for the timer...</p>
+        <button id="close-ad-btn" class="btn-block" style="width:200px; opacity:0.5" disabled onclick="closeAd()">Please Wait...</button>
+    </div>
+
+    <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-auth-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-firestore-compat.js"></script>
+
+    <script>
+        const firebaseConfig = {
+          apiKey: "AIzaSyC7NpwWU8VnXr0uau5HIQXklAPURO5gWwM",
+          authDomain: "abhi-earn-6ea2f.firebaseapp.com",
+          projectId: "abhi-earn-6ea2f",
+          storageBucket: "abhi-earn-6ea2f.firebasestorage.app",
+          messagingSenderId: "439145624406",
+          appId: "1:439145624406:web:91638f46e927a33dfe9cf7"
+        };
+        firebase.initializeApp(firebaseConfig);
+        const auth = firebase.auth();
+        const db = firebase.firestore();
+
+        const LIMITS = { video: 10, spin: 10, scratch: 10 };
+        const spinRewards = [0, 7, 10, 15, 20, 25]; 
+
+        let currentUser = null, userDoc = null, isLoginMode = true, adCallback = null;
+        let maintenanceMode = false;
+        let supportLink = "https://t.me/your_default_link";
+        let appLink = "https://example.com/app"; // Default app link for sharing
+        let currentRotation = 0; 
+
+        // LOAD SETTINGS
+        db.collection('settings').doc('config').onSnapshot(snap => {
+            if(snap.exists) {
+                const data = snap.data();
+                maintenanceMode = data.maintenance === true;
+                if(data.telegram) supportLink = data.telegram;
+                if(data.appLink) appLink = data.appLink; // Load refer link from admin settings
+                
+                if(maintenanceMode) {
+                    document.getElementById('maintenance-screen').classList.remove('hidden');
+                    document.getElementById('auth-screen').classList.add('hidden');
+                    document.getElementById('app-screen').classList.add('hidden');
+                    document.getElementById('ban-screen').classList.add('hidden');
+                } else {
+                    document.getElementById('maintenance-screen').classList.add('hidden');
+                    if(currentUser && userDoc) {
+                        // Stay on app
+                    } else if(!currentUser) {
+                        document.getElementById('auth-screen').classList.remove('hidden');
+                    }
+                }
+            }
+        });
+
+        function openSupportLink() {
+            if(supportLink && supportLink.startsWith('http')) {
+                window.open(supportLink, '_blank');
+            } else {
+                Swal.fire('Support', 'Support channel is currently unavailable.', 'info');
+            }
+        }
+
+        auth.onAuthStateChanged(user => {
+            if(maintenanceMode) return;
+            if (user) {
+                currentUser = user;
+                initUser(user);
+            } else {
+                document.getElementById('auth-screen').classList.remove('hidden');
+                document.getElementById('app-screen').classList.add('hidden');
+            }
+        });
+
+        function generateReferralCode() {
+            const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789';
+            let result = '';
+            for (let i = 0; i < 8; i++) {
+                result += chars.charAt(Math.floor(Math.random() * chars.length));
+            }
+            return result;
+        }
+
+        async function initUser(user) {
+            const userRef = db.collection('users').doc(user.uid);
+            userRef.onSnapshot(async snapshot => {
+                if (!snapshot.exists) {
+                     // Should be handled in submitAuth, but fallback here
+                     const defaultName = user.displayName || "User";
+                     const newReferralCode = generateReferralCode();
+                     await userRef.set({
+                        uid: user.uid, name: defaultName, email: user.email,
+                        photo: "https://cdn-icons-png.flaticon.com/512/4140/4140048.png",
+                        coins: 0, lastSpinTime: 0, dailyDate: new Date().toLocaleDateString(),
+                        videoCount: 0, spinCount: 0, scratchCount: 0, completedTasks: [], 
+                        isBanned: false, referralCode: newReferralCode
+                    });
+                } else {
+                    userDoc = snapshot.data();
+
+                    // If existing user doesn't have a referral code, give them one
+                    if(!userDoc.referralCode) {
+                        await userRef.update({ referralCode: generateReferralCode() });
+                    }
+
+                    if (userDoc.isBanned === true) {
+                        document.getElementById('ban-screen').classList.remove('hidden');
+                        document.getElementById('app-screen').classList.add('hidden');
+                        document.getElementById('auth-screen').classList.add('hidden');
+                        return;
+                    } else {
+                        document.getElementById('ban-screen').classList.add('hidden');
+                        document.getElementById('auth-screen').classList.add('hidden');
+                        if(!maintenanceMode) document.getElementById('app-screen').classList.remove('hidden');
+                    }
+
+                    if(!userDoc.completedTasks) await userRef.update({ completedTasks: [] });
+                    checkDailyReset();
+                    updateUI();
+                }
+            });
+            loadHistory();
+            loadAppTasks();
+        }
+
+        async function checkDailyReset() {
+            const today = new Date().toLocaleDateString();
+            if (userDoc.dailyDate !== today) {
+                await db.collection('users').doc(currentUser.uid).update({
+                    dailyDate: today, videoCount: 0, spinCount: 0, scratchCount: 0
+                });
+            }
+        }
+
+        function updateUI() {
+            if(!userDoc) return;
+            document.getElementById('nav-name').innerText = userDoc.name || "User";
+            document.getElementById('nav-coins').innerText = userDoc.coins;
+            document.getElementById('profile-name').innerText = userDoc.name || "User";
+            document.getElementById('profile-email').innerText = userDoc.email;
+            
+            // Show Referral Code
+            document.getElementById('my-refer-code').innerText = userDoc.referralCode || "Generating...";
+
+            const coins = userDoc.coins || 0;
+            const rupees = (coins / 100).toFixed(2);
+            document.getElementById('profile-coins').innerText = coins;
+            document.getElementById('profile-rupees').innerText = '₹' + rupees;
+
+            document.getElementById('limit-video').innerText = `Limit: ${userDoc.videoCount}/${LIMITS.video}`;
+            document.getElementById('limit-spin').innerText = `Limit: ${userDoc.spinCount}/${LIMITS.spin}`;
+            document.getElementById('limit-scratch').innerText = `Limit: ${userDoc.scratchCount}/${LIMITS.scratch}`;
+            
+            checkSpinCooldown();
+            loadAppTasks();
+        }
+
+        // --- REFERRAL FUNCTIONS ---
+        function copyReferCode() {
+            const code = document.getElementById('my-refer-code').innerText;
+            navigator.clipboard.writeText(code).then(() => {
+                Swal.fire('Copied!', 'Referral code copied to clipboard.', 'success');
+            });
+        }
+        function shareApp() {
+            const code = document.getElementById('my-refer-code').innerText;
+            const shareText = `Use my code ${code} to earn bonus coins! Download App: ${appLink}`;
+            if (navigator.share) {
+                navigator.share({ title: 'Earn Money', text: shareText, url: appLink });
+            } else {
+                navigator.clipboard.writeText(shareText);
+                Swal.fire('Copied Link', 'Share link copied to clipboard!', 'success');
+            }
+        }
+
+        function switchTab(tabId) {
+            document.querySelectorAll('.tab-content').forEach(el => el.classList.add('hidden'));
+            const target = document.getElementById(`tab-${tabId}`);
+            if(target) target.classList.remove('hidden');
+            
+            document.querySelectorAll('.nav-item').forEach(el => {
+                el.classList.remove('active');
+                if(el.getAttribute('onclick').includes(tabId)) el.classList.add('active');
+            });
+            if(tabId === 'tasks') loadAppTasks();
+        }
+
+        // --- ADS & REWARDS ---
+        function showAd(seconds, title, desc, callback) {
+            adCallback = callback;
+            document.getElementById('ad-overlay').classList.remove('hidden');
+            document.getElementById('ad-text-title').innerText = title || "Watching Advertisement";
+            document.getElementById('ad-text-desc').innerText = desc || "Reward will be granted after timer ends";
+            let timeLeft = seconds || 5;
+            const btn = document.getElementById('close-ad-btn');
+            const timerEl = document.getElementById('ad-countdown');
+            btn.disabled = true; btn.innerText = "Please Wait...";
+            
+            const interval = setInterval(() => {
+                timeLeft--;
+                timerEl.innerText = timeLeft;
+                if(timeLeft <= 0) {
+                    clearInterval(interval);
+                    btn.disabled = false; btn.style.opacity = "1"; btn.innerText = "Collect Reward";
+                }
+            }, 1000);
+        }
+        function closeAd() {
+            document.getElementById('ad-overlay').classList.add('hidden');
+            if(adCallback) adCallback();
+        }
+
+        async function startWatchVideo() {
+            if(userDoc.videoCount >= LIMITS.video) return Swal.fire('Limit Reached', 'Daily limit reached!', 'warning');
+            showAd(5, 'Video Ad', null, async () => {
+                const reward = Math.floor(Math.random() * 5) + 5;
+                await addCoins(reward, 'Video Ad', 'videoCount');
+                Swal.fire('Success', `Earned ${reward} coins!`, 'success');
+            });
+        }
+
+        // --- SPIN LOGIC ---
+        function showSpinSection() { switchTab('spin'); if(userDoc) checkSpinCooldown(); }
+        function checkSpinCooldown() {
+            if(!userDoc) return;
+            const diff = Date.now() - (userDoc.lastSpinTime || 0);
+            const btn = document.getElementById('spin-main-btn');
+            if (diff < 60000) {
+                btn.disabled = true; btn.style.opacity = 0.5;
+                document.getElementById('spin-timer').innerText = `Wait ${Math.ceil((60000-diff)/1000)}s`;
+                setTimeout(checkSpinCooldown, 1000);
+            } else { 
+                btn.disabled = false; btn.style.opacity = 1; 
+                document.getElementById('spin-timer').innerText = ""; 
+            }
+        }
+        function spinWheel() {
+            if(userDoc.spinCount >= LIMITS.spin) return Swal.fire('Limit Reached', 'Daily limit reached!', 'warning');
+            const btn = document.getElementById('spin-main-btn'); btn.disabled = true;
+            const index = Math.floor(Math.random() * spinRewards.length);
+            const reward = spinRewards[index];
+            const segmentTarget = 360 - ((index * 60) + 30);
+            currentRotation += (360 * 5) + (360 - (currentRotation % 360)) + segmentTarget;
+            document.getElementById('wheel').style.transform = `rotate(${currentRotation}deg)`;
+            setTimeout(() => { 
+                showAd(5, null, null, async () => {
+                    await db.collection('users').doc(currentUser.uid).update({ lastSpinTime: Date.now() });
+                    if(reward > 0) { 
+                        await addCoins(reward, 'Spin Wheel', 'spinCount'); confetti({particleCount:100}); Swal.fire('Win!', `Won ${reward} coins`, 'success'); 
+                    } else { 
+                        await addCoins(0, 'Spin Wheel', 'spinCount'); Swal.fire('Oh no!', 'Better luck next time!', 'info'); 
+                    }
+                }); 
+            }, 4000); 
+        }
+
+        // --- SCRATCH ---
+        let scratchCtx, isScratching=false;
+        function showScratchSection(){ 
+            if(userDoc.scratchCount >= LIMITS.scratch) return Swal.fire('Limit Reached','Daily limit reached!','warning'); 
+            switchTab('scratch'); initScratch(); 
+        }
+        function initScratch() {
+            const c=document.getElementById('scratch-canvas'); c.width=300; c.height=150;
+            scratchCtx=c.getContext('2d'); scratchCtx.fillStyle='#888'; scratchCtx.fillRect(0,0,300,150);
+            const r=Math.floor(Math.random()*8)+7; 
+            document.getElementById('scratch-val').innerText=`+${r}`; c.dataset.reward=r; c.style.display='block';
+            c.onmousedown=c.ontouchstart=()=>isScratching=true;
+            c.onmouseup=c.ontouchend=()=>{isScratching=false;checkScratchPercent(c);};
+            c.onmousemove=c.ontouchmove=(e)=>{
+                if(!isScratching)return; const rect=c.getBoundingClientRect();
+                const x=(e.clientX||e.touches[0].clientX)-rect.left, y=(e.clientY||e.touches[0].clientY)-rect.top;
+                scratchCtx.globalCompositeOperation='destination-out'; scratchCtx.beginPath(); scratchCtx.arc(x,y,20,0,Math.PI*2); scratchCtx.fill();
+            };
+        }
+        function checkScratchPercent(c){
+            const d=scratchCtx.getImageData(0,0,300,150).data; let cl=0;
+            for(let i=3;i<d.length;i+=4)if(d[i]===0)cl++;
+            if((cl/(300*150))>0.4){ 
+                c.style.display='none'; 
+                showAd(5,null,null,async()=>{ 
+                    await addCoins(parseInt(c.dataset.reward),'Scratch Card','scratchCount'); 
+                    Swal.fire('Success',`Won ${c.dataset.reward} coins!`,'success'); switchTab('home'); 
+                }); 
+            }
+        }
+
+        // --- TASKS ---
+        function loadAppTasks() {
+            if(!userDoc) return;
+            const container = document.getElementById('task-container');
+            db.collection('apps').orderBy('createdAt', 'desc').get().then(snap => {
+                if(snap.empty) { container.innerHTML = '<div style="text-align:center; padding:20px; color:#666">No tasks available.</div>'; return; }
+                let html = '';
+                snap.forEach(doc => {
+                    const data = doc.data();
+                    const isCompleted = userDoc.completedTasks && userDoc.completedTasks.includes(doc.id);
+                    const btnHtml = isCompleted 
+                        ? `<button class="task-btn completed"><i class="fas fa-check"></i> Completed</button>`
+                        : `<button class="task-btn" onclick="startAppTask('${doc.id}', '${data.link}', ${data.coins})">Install +${data.coins}</button>`;
+                    html += `<div class="task-card"><div class="task-left"><img src="${data.image}" class="task-img"><div><div style="font-weight:bold">${data.appName}</div><div style="font-size:11px; color:#888;">${data.description}</div></div></div>${btnHtml}</div>`;
+                });
+                container.innerHTML = html;
+            });
+        }
+        function startAppTask(taskId, link, reward) {
+            Swal.fire({ title: 'Install App', text: "Download and open for 15s.", icon: 'info', showCancelButton: true, confirmButtonText: 'Go to Store' }).then((result) => {
+                if (result.isConfirmed) {
+                    window.open(link, '_blank');
+                    showAd(15, 'Verifying Installation', 'Keep app open', async () => {
+                        const batch = db.batch();
+                        batch.update(db.collection('users').doc(currentUser.uid), { coins: firebase.firestore.FieldValue.increment(reward), completedTasks: firebase.firestore.FieldValue.arrayUnion(taskId) });
+                        batch.set(db.collection('history').doc(), { uid: currentUser.uid, type: 'App Task', amount: reward, timestamp: firebase.firestore.FieldValue.serverTimestamp() });
+                        await batch.commit();
+                        Swal.fire('Task Completed!', `Received ${reward} coins.`, 'success');
+                        loadAppTasks();
+                    });
+                }
+            });
+        }
+
+        // --- NOTIFICATIONS ---
+        function openNotifications() {
+            document.getElementById('notif-modal').classList.remove('hidden');
+            const list = document.getElementById('notif-list');
+            list.innerHTML = 'Loading...';
+            db.collection('notifications').orderBy('timestamp', 'desc').limit(10).get().then(snap => {
+                if(snap.empty) { list.innerHTML = '<div style="text-align:center; padding:20px; color:#666">No notifications.</div>'; return; }
+                let html = '';
+                snap.forEach(doc => {
+                    const data = doc.data();
+                    html += `<div class="notif-item"><div style="font-weight:bold;">${data.title}</div><div style="font-size:13px; color:#ccc;">${data.message}</div><span class="notif-date">${new Date(data.timestamp.seconds * 1000).toLocaleString()}</span></div>`;
+                });
+                list.innerHTML = html;
+            });
+        }
+
+        // --- WITHDRAW & CORE ---
+        async function openWithdrawModal() {
+            const { value: form } = await Swal.fire({
+                title: 'Withdraw Money', html: '<input id="swal-coins" class="swal2-input" type="number" placeholder="Coins (Min 100)"><input id="swal-upi" class="swal2-input" type="text" placeholder="UPI ID">',
+                focusConfirm: false, showCancelButton: true, confirmButtonText: 'Withdraw',
+                preConfirm: () => [document.getElementById('swal-coins').value, document.getElementById('swal-upi').value]
+            });
+            if (form) handleWithdraw(parseInt(form[0]), form[1]);
+        }
+        async function handleWithdraw(coins, upi) {
+            if(!coins || coins < 100) return Swal.fire('Error', 'Min 100 coins', 'error');
+            if(coins > userDoc.coins) return Swal.fire('Error', 'Insufficient balance', 'error');
+            const batch = db.batch();
+            batch.update(db.collection('users').doc(currentUser.uid), { coins: firebase.firestore.FieldValue.increment(-coins) });
+            batch.set(db.collection('history').doc(), {
+                uid: currentUser.uid, type: 'Withdrawal', amount: -coins, rupees: coins/100, upi: upi, status: 'Processing', timestamp: firebase.firestore.FieldValue.serverTimestamp()
+            });
+            await batch.commit();
+            Swal.fire('Success', 'Withdrawal requested!', 'success');
+        }
+        async function addCoins(amt, type, field) {
+            const batch = db.batch(); const u=db.collection('users').doc(currentUser.uid);
+            const upd = {};
+            if(amt > 0) upd.coins = firebase.firestore.FieldValue.increment(amt);
+            if(field) upd[field] = firebase.firestore.FieldValue.increment(1);
+            batch.update(u,upd); 
+            if(amt > 0) {
+                batch.set(db.collection('history').doc(),{uid:currentUser.uid,type,amount:amt,timestamp:firebase.firestore.FieldValue.serverTimestamp()});
+            }
+            await batch.commit();
+        }
+
+        // --- HISTORY ---
+        function loadHistory() {
+            db.collection('history').where('uid', '==', currentUser.uid).limit(50).onSnapshot(s => {
+                if(s.empty) {
+                     document.getElementById('dashboard-history').innerHTML = '<div style="text-align:center;color:#666">No history found.</div>';
+                     document.getElementById('full-history').innerHTML = '<div style="text-align:center;color:#666">No history found.</div>';
+                     return;
+                }
+                const docs = s.docs.map(d => d.data());
+                docs.sort((a, b) => (b.timestamp?.seconds || 0) - (a.timestamp?.seconds || 0));
+
+                const items = docs.map(data => {
+                    const status = data.status ? `<span class="limit-tag">${data.status}</span>` : '';
+                    const amtClass = data.amount < 0 ? 'var(--error)' : 'var(--success)';
+                    const amtSign = data.amount > 0 ? '+' : '';
+                    return `<div class="list-item">
+                                <div><b>${data.type}</b><br>${status}</div>
+                                <div style="font-weight:bold; color:${amtClass}">${amtSign}${data.amount}</div>
+                            </div>`;
+                });
+
+                document.getElementById('dashboard-history').innerHTML = items.slice(0,3).join('');
+                document.getElementById('full-history').innerHTML = items.join('');
+            });
+        }
+
+        function toggleAuthMode() { 
+            isLoginMode=!isLoginMode; 
+            document.getElementById('auth-title').innerText=isLoginMode?"Login":"Register"; 
+            document.getElementById('auth-name').classList.toggle('hidden',isLoginMode); 
+            // Toggle Referral Input
+            document.getElementById('auth-referral').classList.toggle('hidden', isLoginMode);
+            
+            document.getElementById('auth-submit-btn').innerText=isLoginMode?"Login":"Register"; 
+        }
+        
+        async function submitAuth() {
+            try {
+                const e=document.getElementById('auth-email').value;
+                const p=document.getElementById('auth-pass').value;
+                if(isLoginMode) {
+                    await auth.signInWithEmailAndPassword(e,p);
+                }
+                else { 
+                    const name = document.getElementById('auth-name').value;
+                    const enteredReferral = document.getElementById('auth-referral').value.trim(); // Get Referral Code
+                    if(!name) return Swal.fire('Error', 'Please enter your name', 'error');
+                    
+                    const r = await auth.createUserWithEmailAndPassword(e,p);
+                    await r.user.updateProfile({displayName: name});
+                    
+                    const newReferralCode = generateReferralCode();
+                    let initialCoins = 0;
+                    
+                    const batch = db.batch();
+                    const newUserRef = db.collection('users').doc(r.user.uid);
+                    
+                    // CHECK REFERRAL LOGIC
+                    if(enteredReferral) {
+                        const refQuery = await db.collection('users').where('referralCode', '==', enteredReferral).get();
+                        if(!refQuery.empty) {
+                            const referrerDoc = refQuery.docs[0];
+                            // 1. Give 20 coins to Referrer
+                            batch.update(referrerDoc.ref, { coins: firebase.firestore.FieldValue.increment(20) });
+                            // Log history for referrer
+                            batch.set(db.collection('history').doc(), {
+                                uid: referrerDoc.data().uid,
+                                type: 'Referral Bonus',
+                                amount: 20,
+                                timestamp: firebase.firestore.FieldValue.serverTimestamp()
+                            });
+
+                            // 2. Give 10 coins to New User
+                            initialCoins = 10;
+                            // Log history for new user
+                            batch.set(db.collection('history').doc(), {
+                                uid: r.user.uid,
+                                type: 'Referral Sign-up Bonus',
+                                amount: 10,
+                                timestamp: firebase.firestore.FieldValue.serverTimestamp()
+                            });
+                        }
+                    }
+
+                    batch.set(newUserRef, {
+                        uid: r.user.uid, name: name, email: e,
+                        photo: "https://cdn-icons-png.flaticon.com/512/4140/4140048.png",
+                        coins: initialCoins, lastSpinTime: 0, dailyDate: new Date().toLocaleDateString(),
+                        videoCount: 0, spinCount: 0, scratchCount: 0, completedTasks: [], 
+                        isBanned: false, referralCode: newReferralCode
+                    });
+
+                    await batch.commit();
+                }
+            } catch(e){Swal.fire('Error',e.message,'error');}
+        }
+        
+        function logout(){ auth.signOut(); location.reload(); }
+    </script>
+</body>
+</html>
